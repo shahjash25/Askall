@@ -1,22 +1,25 @@
 import React from "react";
+import { useState } from "react";
 import "./css/Post.css";
 import { Avatar } from "@mui/material";
 import {
-  ArrowDownwardOutlined,
-  ArrowUpwardOutlined,
-  ChatBubbleOutlined,
-  MoreHorizOutlined,
-  RepeatOneOutlined,
-  ShareOutlined,
+  // ArrowDownwardOutlined,
+  // ArrowUpwardOutlined,
+  // ChatBubbleOutlined,
+  // MoreHorizOutlined,
+  // RepeatOneOutlined,
+  // ShareOutlined,
 } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import Modal from "react-responsive-modal";
-import { useState } from "react";
 import "react-responsive-modal/styles.css";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import ReactTimeAgo from "react-time-ago";
-// import axios from "axios";
+import axios from "axios";
+import ReactHtmlParser from "html-react-parser";
+import { useSelector } from "react-redux";
+import { selectUser } from "../feature/userSlice";
 
 function LastSeen({ date }) {
   return (
@@ -26,16 +29,52 @@ function LastSeen({ date }) {
   );
 }
 
-function Post({post}) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const Close = <CloseIcon />;
 
+function Post({ post }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const Close = <CloseIcon />;
+  const user = useSelector(selectUser);
+
+  const handleQuill = (value) => {
+    setAnswer(value);
+  };
+  // console.log(answer);
+
+  const handleSubmit = async () => {
+    if (post?._id && answer !== "") {
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
+      const body = {
+        answer: answer,
+        questionId: post?._id,
+        user: user,
+      };
+      await axios
+        .post("/api/answers", body, config)
+        .then((res) => {
+          console.log(res.data);
+          alert("Answer added succesfully");
+          setIsModalOpen(false);
+          window.location.href = "/";
+        })
+        .catch((e) => {
+          console.log(e);
+        });
+    }
+  };
+  
   return (
     <div className="post">
       <div className="post__info">
-        <Avatar />
-        <h4>User Name</h4>
-        <small><LastSeen date={post?.createdAt} /></small>
+        <Avatar src={post?.user?.photo}/>
+        <h4>{post?.user?.userName}</h4>
+        <small>
+          <LastSeen date={post?.createdAt} />
+        </small>
       </div>
       <div className="post__body">
         <div className="post__question">
@@ -62,18 +101,24 @@ function Post({post}) {
             <div className="modal__question">
               <h1>{post?.questionName}</h1>
               <p>
-                asked by <span className="name">userName</span> on
-                <span className="name">{new Date(post?.createdAt).toLocaleString()}</span>
+                asked by <span className="name">{post?.user?.userName}</span> on
+                <span className="name">
+                  {new Date(post?.createdAt).toLocaleString()}
+                </span>
               </p>
             </div>
             <div className="modal__answer">
-              <ReactQuill placeholder="Enter your answer" />
+              <ReactQuill
+                value={answer}
+                onChange={handleQuill}
+                placeholder="Enter your answer"
+              />
             </div>
             <div className="modal__button">
               <button className="cancle" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </button>
-              <button type="submit" className="add">
+              <button onClick={handleSubmit} type="submit" className="add">
                 Add Answer
               </button>
             </div>
@@ -81,7 +126,7 @@ function Post({post}) {
         </div>
         {post.questionUrl !== "" && <img src={post.questionUrl} alt="url" />}
       </div>
-      <div className="post__footer">
+      {/* <div className="post__footer">
         <div className="post__footerAction">
           <ArrowUpwardOutlined />
           <ArrowDownwardOutlined />
@@ -92,7 +137,7 @@ function Post({post}) {
           <ShareOutlined />
           <MoreHorizOutlined />
         </div>
-      </div>
+      </div> */}
       <p
         style={{
           color: "rgba(0,0,0,0.5)",
@@ -104,47 +149,53 @@ function Post({post}) {
         {post?.allAnswers.length} Answer(s)
       </p>
       <div
-        className="post__answer"
         style={{
           margin: "5px 0px 0px 0px ",
           padding: "5px 0px 0px 20px",
           borderTop: "1px solid lightgray",
         }}
+        className="post__answer"
       >
-        <div
-          className="post-answer-container"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            width: "100%",
-            padding: "10px 5px",
-            borderTop: "1px solid lightgray",
-          }}
-        >
-          <div
-            className="post-answered"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "10px",
-              fontSize: "12px",
-              fontWeight: 600,
-              color: "#888",
-            }}
-          >
-            <Avatar />
+        {post?.allAnswers?.map((_a) => (
+          <>
             <div
-              className="post-info"
               style={{
-                margin: "0px 10px",
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+                padding: "10px 5px",
+                borderTop: "1px solid lightgray",
               }}
+              className="post-answer-container"
             >
-              <p>UserName</p>
-              <span>TimeStamp</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "10px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "#888",
+                }}
+                className="post-answered"
+              >
+                <Avatar src={_a?.user?.photo} />
+                <div
+                  style={{
+                    margin: "0px 10px",
+                  }}
+                  className="post-info"
+                >
+                  <p>{_a?.user?.userName}</p>
+                  <span>
+                    <LastSeen date={_a?.createdAt} />
+                  </span>
+                </div>
+              </div>
+              <div className="post-answer">{ReactHtmlParser(_a?.answer)}</div>
             </div>
-          </div>
-          <div className="post-answer">This is a Test answer</div>
-        </div>
+          </>
+        ))}
       </div>
     </div>
   );

@@ -1,13 +1,13 @@
 import React from "react";
-import HomeIcon from "@mui/icons-material/Home";
-import FeaturedPlayListOutlinedIcon from "@mui/icons-material/FeaturedPlayListOutlined";
+// import HomeIcon from "@mui/icons-material/Home";
+// import FeaturedPlayListOutlinedIcon from "@mui/icons-material/FeaturedPlayListOutlined";
 import {
-  AssignmentTurnedInOutlined,
+  // AssignmentTurnedInOutlined,
   // Close,
   ExpandMore,
-  NotificationsOutlined,
+  // NotificationsOutlined,
   PeopleAltOutlined,
-  Search,
+  // Search,
 } from "@mui/icons-material";
 import CloseIcon from "@mui/icons-material/Close";
 import { Avatar, Button, Input } from "@mui/material";
@@ -16,12 +16,19 @@ import Modal from "react-responsive-modal";
 import { useState } from "react";
 import "react-responsive-modal/styles.css";
 import axios from 'axios';
+import { auth } from "../firebase";
+import { signOut } from "firebase/auth";
+import { logout, selectUser } from "../feature/userSlice";
+import { useDispatch, useSelector } from "react-redux";
+import logo_main from "../assets/Askall_logo.png";
 
 function QuoraHeader() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [inputUrl, setInputUrl] = useState("");
   const [question, setQuestion] = useState("");
   const Close = <CloseIcon />;
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
 
   const handleSubmit = async () => {
     if (question !== "") {
@@ -33,14 +40,31 @@ function QuoraHeader() {
       const body = {
         questionName: question,
         questionUrl: inputUrl,
+        user: user,
       };
-      await axios.post("/api/questions", body, config).then((res) => {
+      await axios
+        .post("/api/questions", body, config)
+        .then((res) => {
           console.log(res.data);
           alert(res.data.message);
           window.location.href = "/";
-        }).catch((e) => {
+        })
+        .catch((e) => {
           console.log(e);
           alert("Error in adding question");
+        });
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("Are you sure to logout ?")) {
+      signOut(auth)
+        .then(() => {
+          dispatch(logout());
+          console.log("Logged out");
+        })
+        .catch(() => {
+          console.log("error in logout");
         });
     }
   };
@@ -50,11 +74,11 @@ function QuoraHeader() {
       <div className="qHeader-content">
         <div className="qHeader__logo">
           <img
-            src="https://video-public.canva.com/VAD8lt3jPyI/v/ec7205f25c.gif"
+            src={logo_main}
             alt="logo"
           />
         </div>
-        <div className="qHeader__icons">
+        {/* <div className="qHeader__icons">
           <div className="qHeader__icon">
             <HomeIcon />
           </div>
@@ -70,14 +94,14 @@ function QuoraHeader() {
           <div className="qHeader__icon">
             <NotificationsOutlined />
           </div>
-        </div>
+        </div> */}
 
-        <div className="qHeader__input">
+        {/* <div className="qHeader__input">
           <Search />
           <input type="text" placeholder="Search questions" />
-        </div>
+        </div> */}
         <div className="qHeader__Rem">
-          <Avatar />
+          <span onClick={handleLogout} ><Avatar src={user?.photo} /></span>
           <Button onClick={() => setIsModalOpen(true)}>Add Question</Button>
           <Modal
             open={isModalOpen}
@@ -97,7 +121,7 @@ function QuoraHeader() {
               <h5>Share Link</h5>
             </div>
             <div className="modal__info">
-              <Avatar className="avatar" />
+              <Avatar src={user?.photo} className="avatar" />
               <div className="modal__scope">
                 <PeopleAltOutlined />
                 <p>Public</p>

@@ -92,8 +92,8 @@
   }
   .qHeader__Rem {
     display: flex;
-    align-items: center;
-    margin-left: 25px;
+    align-items: right;
+    margin-left: 1200px;
   }
   
   .qHeader__Rem > .MuiSvgIcon-root {
